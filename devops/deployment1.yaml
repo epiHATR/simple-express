@@ -1,0 +1,57 @@
+---
+## Service 1
+apiVersion: v1
+kind: Service
+metadata:
+  name: express-prod
+  namespace: app-space
+spec:
+  ports:
+    - name: prod
+      port: 9000
+      targetPort: 9000
+      protocol: TCP
+  selector:
+    app: express-prod
+
+---
+## Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: express-prod
+  namespace: app-space
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: express-prod
+  template:
+    metadata:
+      labels:
+        app: express-prod
+    spec:
+      nodeSelector:
+        type: appspool
+      containers:
+      - name: simple-express
+        image: hidetran/simple-express:latest
+        imagePullPolicy: Always
+        command: ["/bin/sh", "-ce", "export PORT=9000; export ENV_NAME=production; npm install; node index.js"]
+        ports:
+          - containerPort: 9000
+            protocol: TCP
+        
+        readinessProbe:
+          httpGet:
+             path: /
+             port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 2
+
+        resources:
+          requests:
+            cpu: 100m
+          limits:
+            cpu: 250m

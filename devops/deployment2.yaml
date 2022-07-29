@@ -1,0 +1,57 @@
+---
+## Service 2
+apiVersion: v1
+kind: Service
+metadata:
+  name: express-prep
+  namespace: app-space
+spec:
+  ports:
+    - name: prep
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: express-prep
+
+---
+## Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: express-prep
+  namespace: app-space
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: express-prep
+  template:
+    metadata:
+      labels:
+        app: express-prep
+    spec:
+      nodeSelector:
+        type: appspool
+      containers:
+      - name: simple-express
+        image: hidetran/simple-express:latest
+        imagePullPolicy: Always
+        command: ["/bin/sh", "-ce", "export PORT=8000; export ENV_NAME=pre-production; npm install; node index.js"]
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        
+        readinessProbe:
+          httpGet:
+             path: /
+             port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          successThreshold: 2
+
+        resources:
+          requests:
+            cpu: 100m
+          limits:
+            cpu: 250m
